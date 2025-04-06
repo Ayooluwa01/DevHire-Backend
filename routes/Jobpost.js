@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs"); // Fixed import
 const Jobposting = express.Router();
 
 Jobposting.post("/Jobpost", async (req, res) => {
-  console.log(req.body);
+  // console.log(req.body);
   const {
     title,
     company,

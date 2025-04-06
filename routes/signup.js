@@ -5,7 +5,7 @@ const signupauth = express.Router();
 
 signupauth.post("/signup", async (req, res) => {
   const { name, email, password, confirmpassword } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
   const role = "seeker";
   // const [name, email, password, role] = [
   //   "Olusegun stephen",
@@ -19,7 +19,7 @@ signupauth.post("/signup", async (req, res) => {
       email,
     ]);
     if (checkuser.rowCount > 0) {
-      console.log("already exits");
+      // console.log("already exits");
       return res.status(400).json({ error: "User already exists" });
     } else {
       const hashedPassword = await bcrypt.hash(confirmpassword, 10);
@@ -30,7 +30,7 @@ signupauth.post("/signup", async (req, res) => {
       return res.status(200).json({ success: "created" });
     }
   } catch (error) {
-    console.error("Error Signning Up", error);
+    // console.error("Error Signning Up", error);
     res.status(500).send("Server Error");
   }
 });

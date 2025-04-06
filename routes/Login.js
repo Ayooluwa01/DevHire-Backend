@@ -7,7 +7,7 @@ const loginauth = express.Router();
 
 loginauth.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log(req.body);
+  // console.log(req.body);
 
   try {
     let user = null;
@@ -63,9 +63,11 @@ loginauth.post("/login", async (req, res) => {
 
     return res.status(200).json({ token });
   } catch (error) {
-    console.error("Error during login:", error);
+    // console.error("Error during login:", error);
     res.status(500).send("Server Error");
   }
 });
+
+// for googleaur
 
 module.exports = loginauth;

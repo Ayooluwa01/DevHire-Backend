@@ -13,7 +13,7 @@ const jobRoutes = (io) => {
       // Emit job listings update to all connected clients
       // io.emit("joblistings", joblistings.rows);
     } catch (error) {
-      console.error("Error fetching job listings:", error);
+      // console.error("Error fetching job listings:", error);
       res.status(500).send("Server Error");
     }
   });

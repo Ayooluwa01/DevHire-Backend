@@ -40,7 +40,7 @@ Employersignup.post("/Employersignup", async (req, res) => {
       return res.status(200).json({ success: "created" });
     }
   } catch (error) {
-    console.error("Error Signning Up", error);
+    // console.error("Error Signning Up", error);
     res.status(500).send("Server Error");
   }
 });

@@ -59,7 +59,7 @@ authroute.post("/auth", async (req, res) => {
       user: { id: user.id, name: user.name, role: user.role },
     });
   } catch (error) {
-    console.error("Error during authentication:", error);
+    // console.error("Error during authentication:", error);
     return res.status(500).json({ error: "Server Error" });
   }
 });

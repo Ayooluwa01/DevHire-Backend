@@ -5,11 +5,16 @@ const pool = require("./db");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 
+// ngrok http --url=allegedly-related-jay.ngrok-free.app 80
 const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://192.168.228.198:3000"],
+    origin: [
+      "http://localhost:3000",
+      "http://192.168.122.198:3000",
+      "https://allegedly-related-jay.ngrok-free.app ",
+    ],
     credentials: true,
   },
 });
@@ -17,7 +22,11 @@ const io = new Server(server, {
 app.use(express.json());
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://192.168.228.198:3000"],
+    origin: [
+      "http://localhost:3000",
+      "http://192.168.122.198:3000",
+      "  https://allegedly-related-jay.ngrok-free.app ",
+    ],
     credentials: true,
   })
 );
@@ -47,7 +56,6 @@ io.on("connection", (socket) => {
   // 🔹 Fetch all jobs
   socket.on("employerConnect", (employerId) => {
     employerSockets[employerId] = socket.id;
-    console.log(employerSockets);
   });
 
   // Fetching all jobs from database
@@ -84,7 +92,7 @@ io.on("connection", (socket) => {
         socket.emit("ProfileError", { message: "User profile not found." });
       }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      // console.error("Error fetching profile:", error);
       // Emit an error if there's an issue with the database query
       socket.emit("ProfileError", { message: "Error fetching user profile." });
     }
@@ -174,26 +182,23 @@ io.on("connection", (socket) => {
         }
       }
     } catch (error) {
-      console.error("Error saving job:", error);
+      // console.error("Error saving job:", error);
     }
   });
 
   // Handling applicant applying job
   socket.on("applyingjob", async (idArray) => {
     const [jobid, userid] = idArray;
-
     try {
       const getapplicantname = await pool.query(
-        `SELECT users.name, users.email, user_bio.number 
-         FROM users 
-         LEFT JOIN user_bio ON users.user_id = user_bio.user_id 
-         WHERE user_bio.user_id = $1`,
+        `SELECT *  
+         FROM users WHERE
+         user_id = $1`,
         [userid]
       );
 
       if (getapplicantname.rowCount > 0) {
         const applicant = getapplicantname.rows[0]; // Get the first row
-
         const jobApplicationQuery = `
           INSERT INTO job_applications (job_id, applicant_name, applicant_email, applicant_phone) 
           VALUES ($1, $2, $3, $4)
@@ -205,6 +210,35 @@ io.on("connection", (socket) => {
           applicant.email,
           applicant.number,
         ]);
+
+        // Check if user activity exists
+        const userActivity = await pool.query(
+          "SELECT jobs_applied FROM user_activities WHERE user_id = $1",
+          [userid]
+        );
+
+        if (userActivity.rows.length === 0) {
+          // No record exists, create one with the job ID
+          await pool.query(
+            "INSERT INTO user_activities (user_id, jobs_applied) VALUES ($1, $2)",
+            [userid, JSON.stringify([jobid])]
+          );
+        } else {
+          // Record exists, check if the job is already saved
+          const existingJobs = JSON.parse(
+            userActivity.rows[0].jobs_applied || "[]"
+          );
+
+          if (existingJobs.includes(jobid)) {
+          } else {
+            // Append the new job and update the database
+            existingJobs.push(jobid);
+            await pool.query(
+              "UPDATE user_activities SET jobs_applied = $1 WHERE user_id = $2",
+              [JSON.stringify(existingJobs), userid]
+            );
+          }
+        }
 
         // Now trigger 'getapplicants' for the employer
         const employerIdResult = await pool.query(
@@ -221,22 +255,44 @@ io.on("connection", (socket) => {
               .to(employerSockets[employerId])
               .emit("getapplicants", employerId);
           } else {
-            console.log(`No socket found for employer with ID: ${employerId}`);
           }
         } else {
-          console.log("No employer found for the given job.");
         }
       } else {
-        console.log("No user found with the given user_id.");
       }
-    } catch (error) {
-      console.error("Error processing job application:", error);
-    }
+    } catch (error) {}
   });
 
   // For an Employer to get applicants
+  socket.on("getallapplicants", async (employerId) => {
+    // console.log(employerId);
+    try {
+      const getapplicants = await pool.query(
+        `SELECT * 
+FROM jobs
+LEFT JOIN Job_Applications
+  ON jobs.id = Job_Applications.job_id
+WHERE employer_id = $1 
+  AND Job_Applications.applicant_name IS NOT NULL
+  AND Job_Applications.applicant_email IS NOT NULL
+ORDER BY applied_at DESC  -- Order by application date (last applied);
+`,
+        [employerId]
+      );
+
+      if (getapplicants.rowCount > 0) {
+        // console.log(getapplicants.rows);
+        socket.emit("allapplicants", getapplicants.rows);
+      } else {
+        socket.emit("noapplicants", "No applicants yet");
+      }
+    } catch (error) {
+      // console.error("Error fetching applicants:", error);
+    }
+  });
+
   socket.on("getapplicants", async (employerId) => {
-    console.log(employerId);
+    // console.log(employerId);
     try {
       const getapplicants = await pool.query(
         `SELECT * 
@@ -253,12 +309,13 @@ LIMIT 5;
       );
 
       if (getapplicants.rowCount > 0) {
+        // console.log(getapplicants.rows);
         socket.emit("applicants", getapplicants.rows);
       } else {
         socket.emit("noapplicants", "No applicants yet");
       }
     } catch (error) {
-      console.error("Error fetching applicants:", error);
+      // console.error("Error fetching applicants:", error);
     }
   });
 
@@ -271,13 +328,17 @@ LIMIT 5;
       );
 
       let appliedjobs = useractivities.rows[0]?.applied_jobs || [];
-
+      let job_applied = useractivities.rows[0]?.jobs_applied || [];
       // If stored as a string, parse it first
       if (typeof appliedjobs === "string") {
         appliedjobs = JSON.parse(appliedjobs);
       }
+      if (typeof job_applied === "string") {
+        job_applied = JSON.parse(job_applied);
+      }
 
       const jobDetails = [];
+      const applied_jobs = [];
 
       for (const job of appliedjobs) {
         try {
@@ -287,17 +348,34 @@ LIMIT 5;
           );
 
           if (joblistings.rows.length > 0) {
+            // console.log("this is the list", joblistings.rows);
             jobDetails.push(joblistings.rows[0]); // Store job details
           }
         } catch (error) {
-          console.error(`Error fetching job with ID ${job}:`, error);
+          // console.error(`Error fetching job with ID ${job}:`, error);
         }
       }
 
+      for (const job of job_applied) {
+        try {
+          const joblistings = await pool.query(
+            "SELECT * FROM jobs WHERE id = $1",
+            [job]
+          );
+
+          if (joblistings.rows.length > 0) {
+            applied_jobs.push(joblistings.rows[0]); // Store job details
+          }
+        } catch (error) {
+          // console.error(`Error fetching job with ID ${job}:`, error);
+        }
+      }
+
+      socket.emit("appliedjobs", applied_jobs);
       // Emit the full array once
       socket.emit("savedJobs", jobDetails);
     } catch (error) {
-      console.error("Error fetching saved jobs:", error);
+      // console.error("Error fetching saved jobs:", error);
       socket.emit("savedJobsError", { message: "Failed to fetch saved jobs" });
     }
   });
@@ -391,25 +469,25 @@ LIMIT 5;
         },
       });
 
-      console.log("Emitting new job:", {
-        title,
-        company,
-        location,
-        type,
-        work_mode,
-        job_function,
-        salary,
-        description,
-        level,
-        requirements,
-        benefits,
-        qualifications,
-        experience,
-        application_deadline,
-        imglink,
-      });
+      // console.log("Emitting new job:", {
+      //   title,
+      //   company,
+      //   location,
+      //   type,
+      //   work_mode,
+      //   job_function,
+      //   salary,
+      //   description,
+      //   level,
+      //   requirements,
+      //   benefits,
+      //   qualifications,
+      //   experience,
+      //   application_deadline,
+      //   imglink,
+      // });
     } catch (error) {
-      console.error("Error inserting job:", error);
+      // console.error("Error inserting job:", error);
 
       // Emit an error message back to the client
       socket.emit("jobPostStatus", {
@@ -425,7 +503,7 @@ LIMIT 5;
   socket.on("getemployerpostedjobs", async (data) => {
     try {
       const employerid = data;
-      console.log(employerid);
+      // console.log(employerid);
       const getEmployerJobs = await pool.query(
         "SELECT * FROM jobs WHERE employer_id = $1",
         [employerid]
@@ -437,7 +515,7 @@ LIMIT 5;
         socket.emit("employerjobs", []); // Emit empty array if no jobs are found
       }
     } catch (error) {
-      console.error("Error fetching jobs:", error);
+      // console.error("Error fetching jobs:", error);
     }
   });
 
@@ -452,13 +530,13 @@ LIMIT 5;
       );
 
       if (deletejob.rowCount > 0) {
-        console.log("Deleted job:", deletejob.rows[0]);
+        // console.log("Deleted job:", deletejob.rows[0]);
         socket.emit("jobdeleted", { jobid });
       } else {
-        console.log("Error: Job not found or not deleted.");
+        // console.log("Error: Job not found or not deleted.");
       }
     } catch (error) {
-      console.error("Error deleting job:", error);
+      // console.error("Error deleting job:", error);
     }
   });
 
@@ -553,26 +631,26 @@ LIMIT 5;
         },
       });
 
-      console.log("Emitting updated job:", {
-        job_id,
-        title,
-        company,
-        location,
-        type,
-        work_mode,
-        job_function,
-        salary,
-        description,
-        level,
-        requirements,
-        benefits,
-        qualifications,
-        experience,
-        application_deadline,
-        imglink,
-      });
+      // console.log("Emitting updated job:", {
+      //   job_id,
+      //   title,
+      //   company,
+      //   location,
+      //   type,
+      //   work_mode,
+      //   job_function,
+      //   salary,
+      //   description,
+      //   level,
+      //   requirements,
+      //   benefits,
+      //   qualifications,
+      //   experience,
+      //   application_deadline,
+      //   imglink,
+      // });
     } catch (error) {
-      console.error("Error updating job:", error);
+      // console.error("Error updating job:", error);
 
       // Emit an error message back to the client
       socket.emit("jobPostStatus", {
@@ -580,6 +658,20 @@ LIMIT 5;
         message: "Failed to update job. Please try again.",
       });
     }
+  });
+
+  socket.on("Totalofalljobs", async (employerId) => {
+    const employer_id = employerId;
+    try {
+      const getallEmployerJobs = await pool.query(
+        "SELECT * FROM jobs WHERE employer_id = $1",
+        [employer_id]
+      );
+
+      if (getallEmployerJobs.rows) {
+        socket.emit("Totalofjobs", getallEmployerJobs.rowCount);
+      }
+    } catch (error) {}
   });
 });
 

@@ -25,7 +25,7 @@ userbio.post("/biodata", async (req, res) => {
     );
 
     if (checkUser.rowCount === 0) {
-      console.log("User does not exist");
+      // console.log("User does not exist");
       return res.status(404).json({ error: "User does not exist" });
     }
 
@@ -91,7 +91,7 @@ userbio.post("/biodata", async (req, res) => {
 
     // Parse experience before returning
     userBio.experience = JSON.parse(userBio.experience || "[]");
-    console.log(userBio.experience);
+    // console.log(userBio.experience);
     // Generate JWT token with biodata
     const token = jwt.sign(userBio, SECRET_KEY, {
       expiresIn: "1h", // Set expiration as needed
@@ -99,7 +99,7 @@ userbio.post("/biodata", async (req, res) => {
 
     return res.status(200).json({ token });
   } catch (error) {
-    console.error("Error during biodata update/insert:", error);
+    // console.error("Error during biodata update/insert:", error);
     res.status(500).send("Server Error");
   }
 });
