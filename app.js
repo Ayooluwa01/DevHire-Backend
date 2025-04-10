@@ -8,6 +8,7 @@ const { Server } = require("socket.io");
 // ngrok http --url=allegedly-related-jay.ngrok-free.app 80
 const app = express();
 const server = createServer(app);
+const PORT = process.env.PORT;
 const io = new Server(server, {
   cors: {
     origin: [
@@ -726,7 +727,6 @@ LIMIT 5;
     }
   });
 });
-const PORT = process.env.PORT;
 server.listen(PORT, () => {
   console.log("Server running on http://localhost:9000");
 });
