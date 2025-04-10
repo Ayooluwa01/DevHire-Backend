@@ -727,8 +727,7 @@ LIMIT 5;
     }
   });
 });
-server.listen(PORT, () => {
-  console.log("Server running on http://localhost:9000");
+server.listen(PORT)
 });
 
 module.exports = app;
