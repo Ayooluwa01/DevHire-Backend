@@ -12,7 +12,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
-      "http://192.168.122.198:3000",
+      "http://192.168.208.198:3000",
       "https://allegedly-related-jay.ngrok-free.app ",
     ],
     credentials: true,
@@ -24,7 +24,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
-      "http://192.168.122.198:3000",
+      "http://192.168.208.198:3000",
       "  https://allegedly-related-jay.ngrok-free.app ",
     ],
     credentials: true,
@@ -189,78 +189,74 @@ io.on("connection", (socket) => {
   // Handling applicant applying job
   socket.on("applyingjob", async (idArray) => {
     const [jobid, userid] = idArray;
+
     try {
-      const getapplicantname = await pool.query(
-        `SELECT *  
-         FROM users WHERE
-         user_id = $1`,
+      const getApplicant = await pool.query(
+        `SELECT * FROM users WHERE user_id = $1`,
         [userid]
       );
 
-      if (getapplicantname.rowCount > 0) {
-        const applicant = getapplicantname.rows[0]; // Get the first row
-        const jobApplicationQuery = `
-          INSERT INTO job_applications (job_id, applicant_name, applicant_email, applicant_phone) 
-          VALUES ($1, $2, $3, $4)
-        `;
+      if (getApplicant.rowCount === 0) return; // user not found
 
-        await pool.query(jobApplicationQuery, [
-          jobid,
-          applicant.name,
-          applicant.email,
-          applicant.number,
-        ]);
+      const applicant = getApplicant.rows[0];
 
-        // Check if user activity exists
-        const userActivity = await pool.query(
-          "SELECT jobs_applied FROM user_activities WHERE user_id = $1",
-          [userid]
+      // Check if user already applied for this job
+      const alreadyApplied = await pool.query(
+        `SELECT * FROM job_applications WHERE job_id = $1 AND applicant_email = $2`,
+        [jobid, applicant.email]
+      );
+
+      if (alreadyApplied.rowCount > 0) return; // already applied, do nothing
+
+      // Insert new application
+      await pool.query(
+        `INSERT INTO job_applications (job_id, applicant_name, applicant_email, applicant_phone) 
+         VALUES ($1, $2, $3, $4)`,
+        [jobid, applicant.name, applicant.email, applicant.number]
+      );
+
+      // Update user_activities
+      const userActivity = await pool.query(
+        `SELECT jobs_applied FROM user_activities WHERE user_id = $1`,
+        [userid]
+      );
+
+      if (userActivity.rowCount === 0) {
+        await pool.query(
+          `INSERT INTO user_activities (user_id, jobs_applied) VALUES ($1, $2)`,
+          [userid, JSON.stringify([jobid])]
         );
-
-        if (userActivity.rows.length === 0) {
-          // No record exists, create one with the job ID
-          await pool.query(
-            "INSERT INTO user_activities (user_id, jobs_applied) VALUES ($1, $2)",
-            [userid, JSON.stringify([jobid])]
-          );
-        } else {
-          // Record exists, check if the job is already saved
-          const existingJobs = JSON.parse(
-            userActivity.rows[0].jobs_applied || "[]"
-          );
-
-          if (existingJobs.includes(jobid)) {
-          } else {
-            // Append the new job and update the database
-            existingJobs.push(jobid);
-            await pool.query(
-              "UPDATE user_activities SET jobs_applied = $1 WHERE user_id = $2",
-              [JSON.stringify(existingJobs), userid]
-            );
-          }
-        }
-
-        // Now trigger 'getapplicants' for the employer
-        const employerIdResult = await pool.query(
-          `SELECT employer_id FROM jobs WHERE id = $1`,
-          [jobid]
-        );
-
-        if (employerIdResult.rowCount > 0) {
-          const employerId = employerIdResult.rows[0].employer_id; // Corrected variable name
-
-          if (employerSockets[employerId]) {
-            // Emit to the employer's socket to get updated applicants
-            socket
-              .to(employerSockets[employerId])
-              .emit("getapplicants", employerId);
-          } else {
-          }
-        } else {
-        }
       } else {
+        const existingJobs = JSON.parse(
+          userActivity.rows[0].jobs_applied || "[]"
+        );
+
+        if (!existingJobs.includes(jobid)) {
+          existingJobs.push(jobid);
+          await pool.query(
+            `UPDATE user_activities SET jobs_applied = $1 WHERE user_id = $2`,
+            [JSON.stringify(existingJobs), userid]
+          );
+        }
       }
-    } catch (error) {}
+
+      // Notify employer
+      const employerResult = await pool.query(
+        `SELECT employer_id FROM jobs WHERE id = $1`,
+        [jobid]
+      );
+
+      if (employerResult.rowCount > 0) {
+        const employerId = employerResult.rows[0].employer_id;
+        if (employerSockets[employerId]) {
+          socket
+            .to(employerSockets[employerId])
+            .emit("getapplicants", employerId);
+        }
+      }
+    } catch (error) {
+      console.error("Error applying for job:", error);
+    }
   });
 
   // For an Employer to get applicants
@@ -291,14 +287,38 @@ ORDER BY applied_at DESC  -- Order by application date (last applied);
     }
   });
 
+  socket.on("applicantdetail", async (email) => {
+    try {
+      const getprofile = await pool.query(
+        `SELECT * 
+        FROM users 
+        LEFT JOIN user_bio ON users.user_id = user_bio.user_id 
+        WHERE  users.email  = $1`,
+        [email]
+      );
+
+      if (getprofile.rowCount > 0) {
+        // Profile found, emit the profile data
+        socket.emit("applicantdata", getprofile.rows[0]);
+        console.log(getprofile.rows[0]);
+      } else {
+        // No profile found, emit an error message
+        socket.emit("ProfileError", { message: "User profile not found." });
+      }
+    } catch (error) {
+      // console.error("Error fetching profile:", error);
+      // Emit an error if there's an issue with the database query
+      socket.emit("ProfileError", { message: "Error fetching user profile." });
+    }
+  });
   socket.on("getapplicants", async (employerId) => {
     // console.log(employerId);
     try {
       const getapplicants = await pool.query(
         `SELECT * 
 FROM jobs
-LEFT JOIN Job_Applications
-  ON jobs.id = Job_Applications.job_id
+LEFT JOIN Job_Applications   
+  ON jobs.id = Job_Applications.job_id 
 WHERE employer_id = $1 
   AND Job_Applications.applicant_name IS NOT NULL
   AND Job_Applications.applicant_email IS NOT NULL
@@ -672,6 +692,38 @@ LIMIT 5;
         socket.emit("Totalofjobs", getallEmployerJobs.rowCount);
       }
     } catch (error) {}
+  });
+
+  // Setting or changing profile pics
+  socket.on("ppics", async (Id) => {
+    const { picurl, userid } = Id;
+
+    try {
+      // Check if image exists
+      const checkIfImageExists = await pool.query(
+        `SELECT "Profilepicture" FROM user_bio WHERE user_id = $1`,
+        [userid]
+      );
+
+      if (checkIfImageExists.rowCount > 0) {
+        // Image exists → Update
+        await pool.query(
+          `UPDATE user_bio SET "Profilepicture" = $1 WHERE user_id = $2`,
+          [picurl, userid]
+        );
+        socket.emit("ppics", picurl);
+      } else {
+        // Image doesn't exist → Insert
+        await pool.query(
+          `UPDATE user_bio SET "Profilepicture" = $1 WHERE user_id = $2`,
+          [picurl, userid]
+        );
+        socket.emit("ppics", picurl);
+        console.log("Profile picture inserted successfully");
+      }
+    } catch (error) {
+      console.error("Error handling profile picture:", error);
+    }
   });
 });
 
