@@ -69,6 +69,7 @@ const employerSockets = {}; // Global map to store employer socket IDs
 
 io.on("connection", (socket) => {
   // 🔹 Fetch all jobs
+  res.json({ status: "name" });
   socket.on("employerConnect", (employerId) => {
     employerSockets[employerId] = socket.id;
   });

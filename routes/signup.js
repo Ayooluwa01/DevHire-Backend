@@ -7,6 +7,7 @@ signupauth.post("/signup", async (req, res) => {
   const { name, email, password, confirmpassword } = req.body;
   // console.log(req.body);
   const role = "seeker";
+
   // const [name, email, password, role] = [
   //   "Olusegun stephen",
   //   "stephenolusegun478@gmail.com",
