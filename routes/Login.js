@@ -62,7 +62,7 @@ loginauth.post("/login", async (req, res) => {
     );
 
     res.cookie("role", role, {
-      httpOnly: true,
+      httpOnly: false,
       secure: process.env.NODE_ENV === "production", // Set to true in production
     });
 
