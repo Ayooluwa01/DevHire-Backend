@@ -53,13 +53,9 @@ loginauth.post("/login", async (req, res) => {
       role,
     };
 
-    const token = jwt.sign(
-      tokenPayload,
-      process.env.JWT_SECRET || "abcdefghijklmnopqrstuvwxyz",
-      {
-        expiresIn: "1h", // Set expiration as needed
-      }
-    );
+    const token = jwt.sign(tokenPayload, "abcdefghijklmnopqrstuvwxyz", {
+      expiresIn: "1h", // Set expiration as needed
+    });
 
     res.cookie("role", role, {
       httpOnly: false,

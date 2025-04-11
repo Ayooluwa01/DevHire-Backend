@@ -6,8 +6,8 @@ const logout = express.Router();
 
 logout.post("/logout", (req, res) => {
   res.cookie("role", "", {
-    httpOnly: true,
-    sameSite: "Strict",
+    // httpOnly: true,
+
     expires: new Date(0), // ✅ Expire the cookie immediately
   });
 
