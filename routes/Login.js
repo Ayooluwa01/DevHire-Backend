@@ -57,11 +57,11 @@ loginauth.post("/login", async (req, res) => {
       expiresIn: "1h", // Set expiration as needed
     });
 
-    res.cookie("role", role, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "Lax",
-    });
+    // res.cookie("role", role, {
+    //   httpOnly: false,
+    //   secure: process.env.NODE_ENV === "production",
+    //   sameSite: "Lax",
+    // });
 
     return res.status(200).json({ token });
   } catch (error) {

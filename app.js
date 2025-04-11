@@ -629,12 +629,14 @@ LIMIT 5;
           job_id, // Job identifier to find the record to update
         ]
       );
+      if (updateJob) {
+        socket.emit("jobPostStatus", {
+          status: "success",
+          message: "Job updated successfully",
+        });
+      }
 
       // Emit a success message back to the client
-      socket.emit("jobPostStatus", {
-        status: "success",
-        message: "Job updated successfully",
-      });
 
       // Optionally, broadcast the updated job to others (e.g., for real-time UI update)
       io.emit("newJobPosted", {
@@ -723,6 +725,37 @@ LIMIT 5;
         // Image doesn't exist → Insert
         await pool.query(
           `UPDATE user_bio SET "Profilepicture" = $1 WHERE user_id = $2`,
+          [picurl, userid]
+        );
+        socket.emit("ppics", picurl);
+        console.log("Profile picture inserted successfully");
+      }
+    } catch (error) {
+      console.error("Error handling profile picture:", error);
+    }
+  });
+
+  socket.on("logo", async (Id) => {
+    const { picurl, userid } = Id;
+
+    try {
+      // Check if image exists
+      const checkIfImageExists = await pool.query(
+        `SELECT "logoimage" FROM employers WHERE employer_id = $1`,
+        [userid]
+      );
+
+      if (checkIfImageExists.rowCount > 0) {
+        // Image exists → Update
+        await pool.query(
+          `UPDATE employers SET "logoimage" = $1 WHERE  employer_id = $1`,
+          [picurl, userid]
+        );
+        socket.emit("logo", picurl);
+      } else {
+        // Image doesn't exist → Insert
+        await pool.query(
+          `UPDATE employers SET "logoimage" = $1 WHERE user_id = $2`,
           [picurl, userid]
         );
         socket.emit("ppics", picurl);
