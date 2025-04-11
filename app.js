@@ -742,6 +742,10 @@ LIMIT 5;
     }
   });
 });
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the backend API!");
+});
 server.listen(PORT);
 
 module.exports = app;
