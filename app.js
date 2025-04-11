@@ -47,15 +47,15 @@ const logout = require("./routes/logout");
 const Employersignup = require("./routes/EmployersSignup");
 const Jobpost = require("./routes/Jobpost");
 
-app.use("/signup", Signup);
-app.use("/jobs", jobRoutes);
-app.use("/jobdetails", jobdetails);
-app.use("/login", Login);
-app.use("/auth", Auth);
-app.use("/userbio", userbio);
-app.use("/logout", logout);
-app.use("/employersignup", Employersignup);
-app.use("/jobpost", Jobpost);
+app.use("", Signup);
+app.use("", jobRoutes);
+app.use("", jobdetails);
+app.use("", Login);
+app.use("", Auth);
+app.use("", userbio);
+app.use("", logout);
+app.use("", Employersignup);
+app.use("", Jobpost);
 
 const employerSockets = {}; // Global map to store employer socket IDs
 

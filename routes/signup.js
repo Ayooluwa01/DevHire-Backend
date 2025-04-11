@@ -4,7 +4,6 @@ const bcrypt = require("bcryptjs"); // Fixed import
 const signupauth = express.Router();
 
 signupauth.post("/signup", async (req, res) => {
-  res.json({ welcome: "wesignup" });
   const { name, email, password, confirmpassword } = req.body;
   // console.log(req.body);
   const role = "seeker";
