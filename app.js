@@ -638,7 +638,7 @@ LIMIT 5;
         ]
       );
       if (updateJob) {
-        console.log(jobupdated);
+        console.log(updateJob.rows[0]);
         socket.emit("jobPostStatus", {
           status: "success",
           message: "Job updated successfully",
