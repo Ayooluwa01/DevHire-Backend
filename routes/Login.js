@@ -58,8 +58,9 @@ loginauth.post("/login", async (req, res) => {
     });
 
     res.cookie("role", role, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production", // Set to true in production
+      httpOnly: false, // frontend can access
+      secure: true, // for https (render.com)
+      sameSite: "none", // allow cross-origin
     });
 
     return res.status(200).json({ token });
