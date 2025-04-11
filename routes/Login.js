@@ -59,7 +59,7 @@ loginauth.post("/login", async (req, res) => {
 
     res.cookie("role", role, {
       httpOnly: false, // frontend can access
-      secure: true, // for https (render.com)
+      secure: false, // for https (render.com)
       sameSite: "none", // allow cross-origin
     });
 
