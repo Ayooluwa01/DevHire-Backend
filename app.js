@@ -736,6 +736,7 @@ LIMIT 5;
   });
 
   socket.on("logo", async (Id) => {
+    console.log(Id);
     const { picurl, userid } = Id;
 
     try {
