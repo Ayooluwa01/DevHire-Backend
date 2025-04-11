@@ -5,7 +5,7 @@ const pool = require("./db");
 const { createServer } = require("http");
 const { Server } = require("socket.io");
 
-// ngrok http --url=allegedly-related-jay.ngrok-free.app 80
+// ngrok http --url=allegedly-related-jay.ngrok-free.app 3000
 const app = express();
 const server = createServer(app);
 const PORT = process.env.PORT;
@@ -14,7 +14,7 @@ const io = new Server(server, {
     origin: [
       "http://localhost:3000",
       "http://192.168.208.198:3000",
-      "https://allegedly-related-jay.ngrok-free.app ",
+      "https://allegedly-related-jay.ngrok-free.app",
     ],
     credentials: true,
   },
@@ -26,7 +26,7 @@ app.use(
     origin: [
       "http://localhost:3000",
       "http://192.168.208.198:3000",
-      "  https://allegedly-related-jay.ngrok-free.app ",
+      "https://allegedly-related-jay.ngrok-free.app",
     ],
     credentials: true,
   })
@@ -727,7 +727,6 @@ LIMIT 5;
     }
   });
 });
-server.listen(PORT)
-
+server.listen(PORT);
 
 module.exports = app;
