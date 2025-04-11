@@ -58,9 +58,9 @@ loginauth.post("/login", async (req, res) => {
     });
 
     res.cookie("role", role, {
-      httpOnly: false, // so frontend can read
-      secure: true, // required when using sameSite: 'none'
-      sameSite: "None", // allow cross-site cookies
+      httpOnly: false, // allows frontend to access the cookie
+      secure: process.env.NODE_ENV === "production", // only set secure in production
+      sameSite: "None", // allows the cookie to be sent in cross-origin requests
     });
 
     return res.status(200).json({ token });
