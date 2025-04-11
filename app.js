@@ -749,7 +749,7 @@ LIMIT 5;
       if (checkIfImageExists.rowCount > 0) {
         // Image exists → Update
         await pool.query(
-          `UPDATE employers SET "logoimage" = $1 WHERE  employer_id = $1`,
+          `UPDATE employers SET "logoimage" = $1 WHERE  employer_id = $2`,
           [picurl, userid]
         );
         socket.emit("logoimage", picurl);
