@@ -6,6 +6,7 @@ const pool = require("../db");
 const loginauth = express.Router();
 
 loginauth.post("/login", async (req, res) => {
+  res.json({ okay: "okay" });
   const { email, password } = req.body;
   // console.log(req.body);
 
