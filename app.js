@@ -594,6 +594,10 @@ LIMIT 5;
 
     try {
       // Update the job data in the database
+      const getlogo = await pool.query(
+        `SELECT logoimage FROM employers WHERE employer_id = $1`,
+        [employerid]
+      );
       const updateJob = await pool.query(
         `UPDATE jobs SET
           title = $1,
@@ -628,12 +632,13 @@ LIMIT 5;
           qualifications,
           experience,
           application_deadline,
-          imglink,
+          getlogo,
           employerid,
           job_id, // Job identifier to find the record to update
         ]
       );
       if (updateJob) {
+        console.log(jobupdated);
         socket.emit("jobPostStatus", {
           status: "success",
           message: "Job updated successfully",
