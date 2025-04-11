@@ -57,7 +57,11 @@ loginauth.post("/login", async (req, res) => {
       expiresIn: "1h", // Set expiration as needed
     });
 
-    res.cookie("role", role);
+    res.cookie("role", role, {
+      httpOnly: false, // so frontend can read
+      secure: true, // required when using sameSite: 'none'
+      sameSite: "none", // allow cross-site cookies
+    });
 
     return res.status(200).json({ token });
   } catch (error) {
