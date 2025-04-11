@@ -751,14 +751,14 @@ LIMIT 5;
           `UPDATE employers SET "logoimage" = $1 WHERE  employer_id = $1`,
           [picurl, userid]
         );
-        socket.emit("logo", picurl);
+        socket.emit("logoimage", picurl);
       } else {
         // Image doesn't exist → Insert
         await pool.query(
           `UPDATE employers SET "logoimage" = $1 WHERE user_id = $2`,
           [picurl, userid]
         );
-        socket.emit("logo", picurl);
+        socket.emit("logoimage", picurl);
         console.log("Profile picture inserted successfully");
       }
     } catch (error) {
