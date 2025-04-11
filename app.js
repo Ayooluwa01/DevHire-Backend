@@ -7,19 +7,8 @@ const { Server } = require("socket.io");
 
 // ngrok http --url=allegedly-related-jay.ngrok-free.app 3000
 const app = express();
-app.use((req, res, next) => {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader(
-    "Access-Control-Allow-Methods",
-    "GET, POST, PUT, DELETE, OPTIONS"
-  );
-  res.setHeader(
-    "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Requested-With"
-  );
-  next();
-});
 
+// Use the CORS middleware
 app.use(
   cors({
     origin: [
@@ -30,8 +19,10 @@ app.use(
     credentials: true,
   })
 );
+
 const server = createServer(app);
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 5000;
+
 const io = new Server(server, {
   cors: {
     origin: [
@@ -45,7 +36,7 @@ const io = new Server(server, {
 
 app.use(express.json());
 
-// Pass `io` to routes
+// Route handlers (make sure these routes exist and work as expected)
 const jobRoutes = require("./routes/Jobs")(io);
 const jobdetails = require("./routes/jobdetails");
 const Login = require("./routes/Login");
@@ -55,15 +46,17 @@ const Signup = require("./routes/signup");
 const logout = require("./routes/logout");
 const Employersignup = require("./routes/EmployersSignup");
 const Jobpost = require("./routes/Jobpost");
-app.use("", Signup);
-app.use("", jobRoutes);
-app.use("", jobdetails);
-app.use("", Login);
-app.use("", Auth);
-app.use("", userbio);
-app.use("", logout);
-app.use("", Employersignup);
-app.use("", Jobpost);
+
+app.use("/signup", Signup);
+app.use("/jobs", jobRoutes);
+app.use("/jobdetails", jobdetails);
+app.use("/login", Login);
+app.use("/auth", Auth);
+app.use("/userbio", userbio);
+app.use("/logout", logout);
+app.use("/employersignup", Employersignup);
+app.use("/jobpost", Jobpost);
+
 const employerSockets = {}; // Global map to store employer socket IDs
 
 io.on("connection", (socket) => {
