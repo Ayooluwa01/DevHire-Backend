@@ -430,6 +430,10 @@ LIMIT 5;
 
     try {
       // Insert the job data into the database
+      const getlogo = await pool.query(
+        `SELECT logoimage FROM employers WHERE employer_id = $1`,
+        [employerid]
+      );
       const insertJob = await pool.query(
         `INSERT INTO jobs (
           title,
@@ -465,7 +469,7 @@ LIMIT 5;
           qualifications,
           experience,
           application_deadline,
-          imglink,
+          getlogo,
           employerid,
         ]
       );
