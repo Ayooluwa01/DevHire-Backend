@@ -6,9 +6,7 @@ const pool = require("../db");
 const loginauth = express.Router();
 
 loginauth.post("/login", async (req, res) => {
-  res.json({ okay: "okay" });
   const { email, password } = req.body;
-  // console.log(req.body);
 
   try {
     let user = null;
@@ -23,31 +21,6 @@ loginauth.post("/login", async (req, res) => {
     if (jobSeekerQuery.rowCount > 0) {
       user = jobSeekerQuery.rows[0];
       role = "jobseeker";
-
-      const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch) {
-        return res.status(401).json({ error: "Invalid credentials" });
-      }
-
-      // Tokens
-      const tokenPayload = {
-        user_id: user.user_id || user.employer_id, // Handle different ID names
-        email: user.email,
-        name: user.name,
-        role,
-      };
-
-      const token = jwt.sign(tokenPayload, "abcdefghijklmnopqrstuvwxyz", {
-        expiresIn: "1h", // Set expiration as needed
-      });
-
-      res.cookie("role", role, {
-        httpOnly: true,
-        secure: false, // Change to true in production with HTTPS
-        sameSite: "Strict",
-      });
-
-      return res.status(200).json({ token });
     } else {
       // Check if the user exists in the employers table
       const employerQuery = await pool.query(
@@ -58,43 +31,46 @@ loginauth.post("/login", async (req, res) => {
       if (employerQuery.rowCount > 0) {
         user = employerQuery.rows[0];
         role = "employer";
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-          return res.status(401).json({ error: "Invalid credentials" });
-        }
-
-        // Generate JWT token
-        const tokenPayload = {
-          user_id: user.user_id || user.employer_id, // Handle different ID names
-          email: user.email,
-          name: user.name,
-          role,
-        };
-
-        const token = jwt.sign(tokenPayload, "abcdefghijklmnopqrstuvwxyz", {
-          expiresIn: "1h", // Set expiration as needed
-        });
-
-        res.cookie("role", role, {
-          httpOnly: true,
-          secure: false, // Change to true in production with HTTPS
-          sameSite: "Strict",
-        });
-
-        return res.status(200).json({ token });
-      } else {
-        return res.status(404).json({ error: "User does not exist" });
       }
     }
 
+    // If user does not exist in either table
+    if (!user) {
+      return res.status(404).json({ error: "User does not exist" });
+    }
+
     // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Tokens
+    const tokenPayload = {
+      user_id: user.user_id || user.employer_id, // Handle different ID names
+      email: user.email,
+      name: user.name,
+      role,
+    };
+
+    const token = jwt.sign(
+      tokenPayload,
+      process.env.JWT_SECRET || "abcdefghijklmnopqrstuvwxyz",
+      {
+        expiresIn: "1h", // Set expiration as needed
+      }
+    );
+
+    res.cookie("role", role, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production", // Set to true in production
+    });
+
+    return res.status(200).json({ token });
   } catch (error) {
-    // console.error("Error during login:", error);
+    console.error("Error during login:", error);
     res.status(500).send("Server Error");
   }
 });
-
-// for googleaur
 
 module.exports = loginauth;
