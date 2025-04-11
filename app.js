@@ -600,6 +600,7 @@ LIMIT 5;
         `SELECT logoimage FROM employers WHERE employer_id = $1`,
         [employerid]
       );
+      const logoimage = getlogo.rows[0].logoimage;
       const updateJob = await pool.query(
         `UPDATE jobs SET
           title = $1,
@@ -634,7 +635,7 @@ LIMIT 5;
           qualifications,
           experience,
           application_deadline,
-          getlogo,
+          logoimage,
           employerid,
           job_id, // Job identifier to find the record to update
         ]
