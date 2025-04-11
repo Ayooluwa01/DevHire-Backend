@@ -758,7 +758,7 @@ LIMIT 5;
           `UPDATE employers SET "logoimage" = $1 WHERE user_id = $2`,
           [picurl, userid]
         );
-        socket.emit("ppics", picurl);
+        socket.emit("logo", picurl);
         console.log("Profile picture inserted successfully");
       }
     } catch (error) {
