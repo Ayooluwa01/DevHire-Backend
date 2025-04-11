@@ -7,22 +7,8 @@ const { Server } = require("socket.io");
 
 // ngrok http --url=allegedly-related-jay.ngrok-free.app 3000
 const app = express();
-const server = createServer(app);
-const PORT = process.env.PORT;
-const io = new Server(server, {
-  cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://192.168.208.198:3000",
-      "https://allegedly-related-jay.ngrok-free.app",
-    ],
-    credentials: true,
-  },
-});
-
-app.use(express.json());
-
 app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, OPTIONS"
@@ -44,6 +30,20 @@ app.use(
     credentials: true,
   })
 );
+const server = createServer(app);
+const PORT = process.env.PORT;
+const io = new Server(server, {
+  cors: {
+    origin: [
+      "http://localhost:3000",
+      "http://192.168.208.198:3000",
+      "https://allegedly-related-jay.ngrok-free.app",
+    ],
+    credentials: true,
+  },
+});
+
+app.use(express.json());
 
 // Pass `io` to routes
 const jobRoutes = require("./routes/Jobs")(io);
