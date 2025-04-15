@@ -15,6 +15,9 @@ app.use(
       "http://localhost:3000",
       "http://192.168.208.198:3000",
       "https://allegedly-related-jay.ngrok-free.app",
+      "https://devhiretalents.netlify.app",
+      "https://devhiretalents.vercel.app",
+      "https://dev-hire-pi.vercel.app",
     ],
     credentials: true,
   })
