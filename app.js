@@ -418,6 +418,7 @@ ORDER BY applied_at DESC  -- Order by application date (last applied);
         }
 
         socket.emit("applicants", applicantsWithImages);
+        console.log(applicantsWithImages);
       } else {
         socket.emit("noapplicants", "No applicants yet");
       }
