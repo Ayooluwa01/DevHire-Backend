@@ -397,10 +397,9 @@ ORDER BY applied_at DESC  -- Order by application date (last applied);
               `SELECT "Profilepicture" FROM user_bio WHERE user_id = $1`,
               [userId]
             );
-            console.log("The profilepicture:", profilePicQuery);
             const profilePicture =
               profilePicQuery.rowCount > 0
-                ? profilePicQuery.rows[0].profilepicture
+                ? profilePicQuery.rows[0].Profilepicture
                 : null;
 
             applicantsWithImages.push({
