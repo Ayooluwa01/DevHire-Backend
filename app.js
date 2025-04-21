@@ -791,7 +791,7 @@ LIMIT 5;
       );
       if (checkIfImageExists.rowCount > 0) {
         // Image exists → Update
-        socket.emit("logoimage", picurl);
+        socket.emit("logoimage", checkIfImageExists.rows[0].logoimage);
       }
     } catch (error) {
       console.error("Error handling profile picture:", error);
