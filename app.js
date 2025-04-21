@@ -393,9 +393,9 @@ ORDER BY applied_at DESC  -- Order by application date (last applied);
 
           if (userIdQuery.rowCount > 0) {
             const userId = userIdQuery.rows[0].user_id;
-
+            console.log("Applicant id", userId);
             const profilePicQuery = await pool.query(
-              `SELECT profilepicture FROM user_bio WHERE user_id = $1`,
+              `SELECT "Profilepicture" FROM user_bio WHERE user_id = $1`,
               [userId]
             );
 
