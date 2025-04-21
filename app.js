@@ -321,35 +321,112 @@ ORDER BY applied_at DESC  -- Order by application date (last applied);
       socket.emit("ProfileError", { message: "Error fetching user profile." });
     }
   });
+  //   socket.on("getapplicants", async (employerId) => {
+  //     // console.log(employerId);
+  //     try {
+  //       const getapplicants = await pool.query(
+  //         `SELECT *
+  // FROM jobs
+  // LEFT JOIN Job_Applications
+  //   ON jobs.id = Job_Applications.job_id
+  // WHERE employer_id = $1
+  //   AND Job_Applications.applicant_name IS NOT NULL
+  //   AND Job_Applications.applicant_email IS NOT NULL
+  // ORDER BY applied_at DESC  -- Order by application date (last applied)
+  // LIMIT 5;
+  // `,
+  //         [employerId]
+  //       );
+
+  //       if (getapplicants.rowCount > 0) {
+  //         const getapplicantsid = await pool.query(
+  //           `SELECT user_id FROM users WHERE email =$1`,
+  //           [getapplicants.rows.applicant_email]
+  //         );
+
+  //         if(getapplicantimage){
+  //           const getapplicantimage = await pool.query(
+  //             `SELECT Profilepicture FROM user_bio WHERE user_id =$1`,
+  //             [getapplicantsids.rows.applicant_email]
+  //           );
+
+  //         }
+
+  //         // console.log(getapplicants.rows);
+  //         socket.emit("applicants", getapplicants.rows);
+  //       } else {
+  //         socket.emit("noapplicants", "No applicants yet");
+  //       }
+  //     } catch (error) {
+  //       // console.error("Error fetching applicants:", error);
+  //     }
+  //   });
+
+  // For applicants to get all saved jobs
+
   socket.on("getapplicants", async (employerId) => {
-    // console.log(employerId);
     try {
-      const getapplicants = await pool.query(
-        `SELECT * 
-FROM jobs
-LEFT JOIN Job_Applications   
-  ON jobs.id = Job_Applications.job_id 
-WHERE employer_id = $1 
-  AND Job_Applications.applicant_name IS NOT NULL
-  AND Job_Applications.applicant_email IS NOT NULL
-ORDER BY applied_at DESC  -- Order by application date (last applied)
-LIMIT 5;
-`,
+      const getApplicants = await pool.query(
+        `SELECT 
+           Job_Applications.applicant_name,
+           Job_Applications.applicant_email,
+           Job_Applications.applied_at,
+           jobs.title AS job_title
+         FROM jobs
+         LEFT JOIN Job_Applications ON jobs.id = Job_Applications.job_id 
+         WHERE jobs.employer_id = $1 
+           AND Job_Applications.applicant_name IS NOT NULL
+           AND Job_Applications.applicant_email IS NOT NULL
+         ORDER BY Job_Applications.applied_at DESC
+         LIMIT 5;`,
         [employerId]
       );
 
-      if (getapplicants.rowCount > 0) {
-        // console.log(getapplicants.rows);
-        socket.emit("applicants", getapplicants.rows);
+      if (getApplicants.rowCount > 0) {
+        const applicantsWithImages = [];
+
+        for (const applicant of getApplicants.rows) {
+          const userIdQuery = await pool.query(
+            `SELECT user_id FROM users WHERE email = $1`,
+            [applicant.applicant_email]
+          );
+
+          if (userIdQuery.rowCount > 0) {
+            const userId = userIdQuery.rows[0].user_id;
+
+            const profilePicQuery = await pool.query(
+              `SELECT Profilepicture FROM user_bio WHERE user_id = $1`,
+              [userId]
+            );
+
+            const profilePicture =
+              profilePicQuery.rowCount > 0
+                ? profilePicQuery.rows[0].profilepicture
+                : null;
+
+            applicantsWithImages.push({
+              ...applicant,
+              profilePicture,
+            });
+          } else {
+            // If user_id is not found, still push applicant info with no image
+            applicantsWithImages.push({
+              ...applicant,
+              profilePicture: null,
+            });
+          }
+        }
+
+        socket.emit("applicants", applicantsWithImages);
       } else {
         socket.emit("noapplicants", "No applicants yet");
       }
     } catch (error) {
-      // console.error("Error fetching applicants:", error);
+      console.error("Error fetching applicants:", error);
+      socket.emit("error", "Error fetching applicants");
     }
   });
 
-  // For applicants to get all saved jobs
   socket.on("getSavedJobs", async (userid) => {
     try {
       const useractivities = await pool.query(
