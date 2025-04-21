@@ -781,6 +781,22 @@ LIMIT 5;
       console.error("Error handling profile picture:", error);
     }
   });
+
+  socket.on("Getlogo", async (Id) => {
+    const userid = Id;
+    try {
+      const checkIfImageExists = await pool.query(
+        `SELECT "logoimage" FROM employers WHERE employer_id = $1`,
+        [userid]
+      );
+      if (checkIfImageExists.rowCount > 0) {
+        // Image exists → Update
+        socket.emit("logoimage", picurl);
+      }
+    } catch (error) {
+      console.error("Error handling profile picture:", error);
+    }
+  });
 });
 
 app.get("/", (req, res) => {
