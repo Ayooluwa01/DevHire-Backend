@@ -83,22 +83,25 @@ authroute.post("/auth", async (req, res) => {
     const checkUser = await pool.query("SELECT * FROM users WHERE email = $1", [
       email,
     ]);
-
+    console.log("selecting dfrom user:", email, name);
     let user;
 
     if (checkUser.rowCount > 0) {
       user = checkUser.rows[0];
+      console.log("user exits", user);
     } else {
       const newUser = await pool.query(
         "INSERT INTO users (name, email, role) VALUES ($1, $2, $3) RETURNING *",
         [name, email, "seeker"]
       );
+      console.log("creatig new user");
 
       if (newUser.rowCount === 0) {
         return res.status(500).json({ error: "User creation failed" });
       }
 
       user = newUser.rows[0];
+      console.log("NEw user", user);
     }
 
     res.cookie("role", user.role, {
