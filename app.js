@@ -30,6 +30,7 @@ const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
+      "https://allegedly-related-jay.ngrok-free.app",
       "http://192.168.208.198:3000",
       "https://allegedly-related-jay.ngrok-free.app",
     ],
