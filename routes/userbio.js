@@ -25,20 +25,23 @@ userbio.post("/biodata", async (req, res) => {
     );
 
     if (checkUser.rowCount === 0) {
-      // console.log("User does not exist");
+      console.log("User does not exist");
       return res.status(404).json({ error: "User does not exist" });
     }
 
     const user = checkUser.rows[0];
+    console.log("This is user id:", user);
 
-    // Ensure `experience` is properly formatted before storing
-    const experienceString = Array.isArray(experience)
-      ? JSON.stringify(experience) // Convert array of objects to string
-      : "[]"; // Default to an empty array
-
-    // Formating Education array before storing in dv
+    // Safely stringify array fields before storing in TEXT columns
+    const SkillsString = Array.isArray(skills) ? JSON.stringify(skills) : "[]";
+    const LanguageString = Array.isArray(language)
+      ? JSON.stringify(language)
+      : "[]";
     const EducationString = Array.isArray(education)
-      ? JSON.stringify(education) // Convert array of objects to string
+      ? JSON.stringify(education)
+      : "[]";
+    const ExperienceString = Array.isArray(experience)
+      ? JSON.stringify(experience)
       : "[]";
 
     // Check if biodata already exists
@@ -55,10 +58,10 @@ userbio.post("/biodata", async (req, res) => {
          WHERE user_id = $8`,
         [
           bio,
-          skills,
+          SkillsString,
           EducationString,
-          experienceString, // Store as JSON string
-          language,
+          ExperienceString,
+          LanguageString,
           number,
           address,
           user.user_id,
@@ -72,10 +75,10 @@ userbio.post("/biodata", async (req, res) => {
         [
           user.user_id,
           bio,
-          skills,
-          education,
-          experienceString, // Store as JSON string
-          language,
+          SkillsString,
+          EducationString,
+          ExperienceString,
+          LanguageString,
           number,
           address,
         ]
@@ -87,19 +90,25 @@ userbio.post("/biodata", async (req, res) => {
       "SELECT * FROM user_bio WHERE user_id = $1",
       [user.user_id]
     );
+
     const userBio = updatedBiodata.rows[0];
 
-    // Parse experience before returning
+    // Parse stringified arrays before returning to client
+    userBio.skills = JSON.parse(userBio.skills || "[]");
+    userBio.language = JSON.parse(userBio.language || "[]");
+    userBio.education = JSON.parse(userBio.education || "[]");
     userBio.experience = JSON.parse(userBio.experience || "[]");
-    // console.log(userBio.experience);
+
     // Generate JWT token with biodata
     const token = jwt.sign(userBio, SECRET_KEY, {
       expiresIn: "1h", // Set expiration as needed
     });
 
+    console.log("This is the userBio:", userBio);
+
     return res.status(200).json({ token });
   } catch (error) {
-    // console.error("Error during biodata update/insert:", error);
+    console.error("Error during biodata update/insert:", error); // <-- log full error!
     res.status(500).send("Server Error");
   }
 });

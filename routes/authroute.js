@@ -104,7 +104,7 @@ authroute.post("/auth", async (req, res) => {
       console.log("NEw user", user);
     }
 
-    res.cookie("role", user.role, {
+    res.cookie("role", "jobseeker", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "Lax",
